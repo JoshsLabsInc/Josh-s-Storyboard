@@ -442,6 +442,43 @@
             margin-bottom: 15px;
             color: #444;
         }
+
+        /* Share section */
+        .share-section {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            margin-bottom: 2rem;
+        }
+
+        .share-section h2 {
+            margin-bottom: 15px;
+            color: #6a11cb;
+        }
+
+        .share-link {
+            display: flex;
+            margin-top: 10px;
+        }
+
+        .share-link input {
+            flex: 1;
+            padding: 10px;
+            background-color: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 4px 0 0 4px;
+            color: #e0e0e0;
+        }
+
+        .share-link button {
+            padding: 10px 15px;
+            background-color: #6a11cb;
+            color: white;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -487,6 +524,15 @@
         <div class="container">
             <div class="admin-header">
                 <h1>Admin Dashboard</h1>
+            </div>
+            
+            <div class="share-section">
+                <h2>Share Your Gallery</h2>
+                <p>Anyone with this link can view your storyboard gallery:</p>
+                <div class="share-link">
+                    <input type="text" id="galleryLink" readonly value="Loading...">
+                    <button id="copyLinkBtn">Copy</button>
+                </div>
             </div>
             
             <div class="admin-stats">
@@ -626,9 +672,14 @@
         const totalFavoritesEl = document.getElementById('totalFavorites');
         const emptyGallery = document.getElementById('emptyGallery');
         const emptyAdminGallery = document.getElementById('emptyAdminGallery');
+        const galleryLink = document.getElementById('galleryLink');
+        const copyLinkBtn = document.getElementById('copyLinkBtn');
 
         // Initialize the application
         function init() {
+            // Set the shareable gallery link
+            galleryLink.value = window.location.href.split('?')[0];
+            
             // Check if user is already logged in
             const savedLogin = sessionStorage.getItem('storyboardLoggedIn');
             if (savedLogin === 'true') {
@@ -739,6 +790,22 @@
 
             // Login form
             loginForm.addEventListener('submit', handleLogin);
+            
+            // Copy link button
+            copyLinkBtn.addEventListener('click', copyGalleryLink);
+        }
+
+        // Copy gallery link to clipboard
+        function copyGalleryLink() {
+            galleryLink.select();
+            document.execCommand('copy');
+            
+            // Visual feedback
+            const originalText = copyLinkBtn.textContent;
+            copyLinkBtn.textContent = 'Copied!';
+            setTimeout(() => {
+                copyLinkBtn.textContent = originalText;
+            }, 2000);
         }
 
         // Show specific page
