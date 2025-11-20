@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Josh's Storyboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* All the CSS from previous implementation remains the same */
+        /* ... (include all the CSS from the previous dark theme implementation) ... */
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container header-content">
+            <div class="logo">
+                <i class="fas fa-images"></i>
+                Josh's Storyboard
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="nav-link active" data-page="gallery">Gallery</a></li>
+                    <li><a href="#" class="nav-link" data-page="admin">Admin</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Gallery Page -->
+    <section id="gallery" class="page active">
+        <div class="container">
+            <div class="gallery-header">
+                <h1>Storyboard Gallery</h1>
+                <div class="filter-options">
+                    <button class="filter-btn active" data-filter="all">All Images</button>
+                    <button class="filter-btn" data-filter="favorites">Favorites</button>
+                </div>
+            </div>
+            <div class="gallery-grid" id="galleryGrid">
+                <div class="empty-state" id="emptyGallery">
+                    <i class="fas fa-image"></i>
+                    <h3>No images yet</h3>
+                    <p>Upload some images to get started</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin Page -->
+    <section id="admin" class="page">
+        <div class="container">
+            <div class="admin-header">
+                <h1>Admin Dashboard</h1>
+            </div>
+            
+            <div class="share-section">
+                <h2>Share Your Gallery</h2>
+                <p>Anyone with this link can view your storyboard gallery:</p>
+                <div class="share-link">
+                    <input type="text" id="galleryLink" readonly value="Loading...">
+                    <button id="copyLinkBtn">Copy</button>
+                </div>
+            </div>
+            
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <i class="fas fa-eye"></i>
+                    <h3 id="totalVisits">0</h3>
+                    <p>Total Visits</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-clock"></i>
+                    <h3 id="avgSession">0m</h3>
+                    <p>Avg. Session Duration</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-image"></i>
+                    <h3 id="totalImages">0</h3>
+                    <p>Total Images</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-heart"></i>
+                    <h3 id="totalFavorites">0</h3>
+                    <p>Total Favorites</p>
+                </div>
+            </div>
+            
+            <div class="upload-section">
+                <h2>Upload New Image</h2>
+                <form id="uploadForm">
+                    <div class="form-group">
+                        <label for="imageTitle">Image Title</label>
+                        <input type="text" id="imageTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="imageDescription">Description</label>
+                        <textarea id="imageDescription" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="imageUpload">Select Image</label>
+                        <input type="file" id="imageUpload" accept="image/*" required>
+                    </div>
+                    <button type="submit" class="btn">Upload Image</button>
+                </form>
+            </div>
+            
+            <div class="upload-section">
+                <h2>Manage Images</h2>
+                <div id="adminGallery" class="gallery-grid">
+                    <div class="empty-state" id="emptyAdminGallery">
+                        <i class="fas fa-image"></i>
+                        <h3>No images yet</h3>
+                        <p>Upload some images to get started</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Page -->
+    <section id="login" class="page">
+        <div class="container">
+            <div class="login-container">
+                <form class="login-form" id="loginForm">
+                    <h2>Admin Login</h2>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    <button type="submit" class="btn">Login</button>
+                    <p id="loginError" style="color: #e74c3c; margin-top: 15px; display: none;">Invalid password. Please try again.</p>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Image Modal -->
+    <div class="modal" id="imageModal">
+        <button class="close-modal" id="closeModal">&times;</button>
+        <div class="modal-content">
+            <div class="modal-image">
+                <img id="modalImg" src="" alt="">
+            </div>
+            <div class="modal-details">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="modalTitle"></h3>
+                    <button class="favorite-btn" id="favoriteBtn">
+                        <i class="far fa-heart"></i>
+                    </button>
+                </div>
+                <p class="modal-description" id="modalDescription"></p>
+                <p class="modal-date" id="modalDate"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2023 Josh's Storyboard. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // API endpoints
+        const API_BASE = window.location.origin;
+        
+        // Application state
+        let state = {
+            images: [],
+            currentFilter: 'all',
+            isLoggedIn: false
+        };
+
+        // DOM Elements
+        const pages = document.querySelectorAll('.page');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const galleryGrid = document.getElementById('galleryGrid');
+        const adminGallery = document.getElementById('adminGallery');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const imageModal = document.getElementById('imageModal');
+        const closeModal = document.getElementById('closeModal');
+        const modalImg = document.getElementById('modalImg');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDescription = document.getElementById('modalDescription');
+        const modalDate = document.getElementById('modalDate');
+        const favoriteBtn = document.getElementById('favoriteBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+        const totalVisitsEl = document.getElementById('totalVisits');
+        const avgSessionEl = document.getElementById('avgSession');
+        const totalImagesEl = document.getElementById('totalImages');
+        const totalFavoritesEl = document.getElementById('totalFavorites');
+        const emptyGallery = document.getElementById('emptyGallery');
+        const emptyAdminGallery = document.getElementById('emptyAdminGallery');
+        const galleryLink = document.getElementById('galleryLink');
+        const copyLinkBtn = document.getElementById('copyLinkBtn');
+
+        // Initialize the application
+        async function init() {
+            // Set the shareable gallery link
+            galleryLink.value = window.location.href;
+            
+            // Check if user is already logged in
+            const savedLogin = sessionStorage.getItem('storyboardLoggedIn');
+            if (savedLogin === 'true') {
+                state.isLoggedIn = true;
+                showPage('admin');
+                navLinks.forEach(nav => {
+                    nav.classList.remove('active');
+                    if (nav.getAttribute('data-page') === 'admin') {
+                        nav.classList.add('active');
+                    }
+                });
+            }
+            
+            // Load data from server
+            await loadData();
+            setupEventListeners();
+        }
+
+        // Load data from server
+        async function loadData() {
+            try {
+                const [imagesResponse, statsResponse] = await Promise.all([
+                    fetch('/api/images'),
+                    fetch('/api/stats')
+                ]);
+                
+                if (imagesResponse.ok) {
+                    state.images = await imagesResponse.json();
+                }
+                
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    updateStats(stats);
+                }
+                
+                renderGallery();
+                renderAdminGallery();
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        // Update statistics display
+        function updateStats(stats) {
+            totalVisitsEl.textContent = stats.totalVisits || 0;
+            totalImagesEl.textContent = stats.totalImages || 0;
+            totalFavoritesEl.textContent = stats.totalFavorites || 0;
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Navigation
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const pageId = link.getAttribute('data-page');
+                    
+                    if (pageId === 'admin' && !state.isLoggedIn) {
+                        showPage('login');
+                        return;
+                    }
+                    
+                    showPage(pageId);
+                    
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    link.classList.add('active');
+                });
+            });
+
+            // Filter buttons
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    state.currentFilter = button.getAttribute('data-filter');
+                    renderGallery();
+                });
+            });
+
+            // Modal
+            closeModal.addEventListener('click', closeImageModal);
+            imageModal.addEventListener('click', (e) => {
+                if (e.target === imageModal) {
+                    closeImageModal();
+                }
+            });
+
+            // Favorite button
+            favoriteBtn.addEventListener('click', toggleFavorite);
+
+            // Upload form
+            uploadForm.addEventListener('submit', handleImageUpload);
+
+            // Login form
+            loginForm.addEventListener('submit', handleLogin);
+            
+            // Copy link button
+            copyLinkBtn.addEventListener('click', copyGalleryLink);
+        }
+
+        // Copy gallery link to clipboard
+        function copyGalleryLink() {
+            galleryLink.select();
+            document.execCommand('copy');
+            
+            const originalText = copyLinkBtn.textContent;
+            copyLinkBtn.textContent = 'Copied!';
+            setTimeout(() => {
+                copyLinkBtn.textContent = originalText;
+            }, 2000);
+        }
+
+        // Show specific page
+        function showPage(pageId) {
+            pages.forEach(page => {
+                page.classList.remove('active');
+                if (page.id === pageId) {
+                    page.classList.add('active');
+                }
+            });
+        }
+
+        // Render gallery based on current filter
+        function renderGallery() {
+            galleryGrid.innerHTML = '';
+            
+            let imagesToShow = state.images;
+            if (state.currentFilter === 'favorites') {
+                imagesToShow = state.images.filter(img => img.isFavorite);
+            }
+            
+            if (imagesToShow.length === 0) {
+                emptyGallery.style.display = 'block';
+                return;
+            } else {
+                emptyGallery.style.display = 'none';
+            }
+            
+            imagesToShow.forEach(image => {
+                const galleryItem = document.createElement('div');
+                galleryItem.className = 'gallery-item';
+                galleryItem.setAttribute('data-id', image.id);
+                
+                galleryItem.innerHTML = `
+                    <img src="${image.url}" alt="${image.title}" loading="lazy">
+                    <div class="gallery-item-info">
+                        <h3>${image.title}</h3>
+                        <p>${image.description.substring(0, 50)}...</p>
+                        <div class="gallery-item-date">${formatDate(image.date)}</div>
+                    </div>
+                `;
+                
+                galleryItem.addEventListener('click', () => openImageModal(image.id));
+                galleryGrid.appendChild(galleryItem);
+            });
+        }
+
+        // Render admin gallery
+        function renderAdminGallery() {
+            adminGallery.innerHTML = '';
+            
+            if (state.images.length === 0) {
+                emptyAdminGallery.style.display = 'block';
+                return;
+            } else {
+                emptyAdminGallery.style.display = 'none';
+            }
+            
+            state.images.forEach(image => {
+                const galleryItem = document.createElement('div');
+                galleryItem.className = 'gallery-item';
+                
+                galleryItem.innerHTML = `
+                    <img src="${image.url}" alt="${image.title}">
+                    <div class="gallery-item-info">
+                        <h3>${image.title}</h3>
+                        <p>${image.description.substring(0, 50)}...</p>
+                        <div class="gallery-item-date">${formatDate(image.date)}</div>
+                        <button class="btn delete-btn" data-id="${image.id}" style="margin-top: 10px; background-color: #e74c3c;">Delete</button>
+                    </div>
+                `;
+                
+                adminGallery.appendChild(galleryItem);
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.getAttribute('data-id'));
+                    deleteImage(id);
+                });
+            });
+        }
+
+        // Open image modal
+        function openImageModal(imageId) {
+            const image = state.images.find(img => img.id === imageId);
+            if (!image) return;
+            
+            modalImg.src = image.url;
+            modalTitle.textContent = image.title;
+            modalDescription.textContent = image.description;
+            modalDate.textContent = `Uploaded on ${formatDate(image.date)}`;
+            
+            if (image.isFavorite) {
+                favoriteBtn.classList.add('active');
+                favoriteBtn.innerHTML = '<i class="fas fa-heart"></i>';
+            } else {
+                favoriteBtn.classList.remove('active');
+                favoriteBtn.innerHTML = '<i class="far fa-heart"></i>';
+            }
+            
+            favoriteBtn.setAttribute('data-id', imageId);
+            imageModal.classList.add('active');
+        }
+
+        // Close image modal
+        function closeImageModal() {
+            imageModal.classList.remove('active');
+        }
+
+        // Toggle favorite status
+        async function toggleFavorite() {
+            const imageId = parseInt(favoriteBtn.getAttribute('data-id'));
+            
+            try {
+                const response = await fetch(`/api/favorite/${imageId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const imageIndex = state.images.findIndex(img => img.id === imageId);
+                    
+                    if (imageIndex !== -1) {
+                        state.images[imageIndex].isFavorite = result.isFavorite;
+                        
+                        if (result.isFavorite) {
+                            favoriteBtn.classList.add('active');
+                            favoriteBtn.innerHTML = '<i class="fas fa-heart"></i>';
+                        } else {
+                            favoriteBtn.classList.remove('active');
+                            favoriteBtn.innerHTML = '<i class="far fa-heart"></i>';
+                        }
+                        
+                        if (state.currentFilter === 'favorites') {
+                            renderGallery();
+                        }
+                        
+                        // Reload stats to get updated favorites count
+                        const statsResponse = await fetch('/api/stats');
+                        if (statsResponse.ok) {
+                            const stats = await statsResponse.json();
+                            updateStats(stats);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error toggling favorite:', error);
+            }
+        }
+
+        // Handle image upload
+        async function handleImageUpload(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('imageTitle').value;
+            const description = document.getElementById('imageDescription').value;
+            const fileInput = document.getElementById('imageUpload');
+            
+            if (!title || !description || !fileInput.files[0]) {
+                alert('Please fill all fields and select an image.');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('description', description);
+            formData.append('image', fileInput.files[0]);
+            
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    state.images.unshift(result.image);
+                    renderGallery();
+                    renderAdminGallery();
+                    
+                    // Update stats
+                    const statsResponse = await fetch('/api/stats');
+                    if (statsResponse.ok) {
+                        const stats = await statsResponse.json();
+                        updateStats(stats);
+                    }
+                    
+                    uploadForm.reset();
+                    alert('Image uploaded successfully!');
+                } else {
+                    alert('Error uploading image: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert('Error uploading image. Please try again.');
+            }
+        }
+
+        // Delete image
+        async function deleteImage(imageId) {
+            if (!confirm('Are you sure you want to delete this image?')) return;
+            
+            try {
+                const response = await fetch(`/api/images/${imageId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    state.images = state.images.filter(img => img.id !== imageId);
+                    renderGallery();
+                    renderAdminGallery();
+                    
+                    // Update stats
+                    const statsResponse = await fetch('/api/stats');
+                    if (statsResponse.ok) {
+                        const stats = await statsResponse.json();
+                        updateStats(stats);
+                    }
+                } else {
+                    alert('Error deleting image');
+                }
+            } catch (error) {
+                console.error('Error deleting image:', error);
+                alert('Error deleting image. Please try again.');
+            }
+        }
+
+        // Handle login
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    state.isLoggedIn = true;
+                    loginError.style.display = 'none';
+                    showPage('admin');
+                    
+                    sessionStorage.setItem('storyboardLoggedIn', 'true');
+                    
+                    navLinks.forEach(nav => {
+                        nav.classList.remove('active');
+                        if (nav.getAttribute('data-page') === 'admin') {
+                            nav.classList.add('active');
+                        }
+                    });
+                } else {
+                    loginError.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                loginError.textContent = 'Network error. Please try again.';
+                loginError.style.display = 'block';
+            }
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
